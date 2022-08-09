@@ -1,0 +1,25 @@
+CAPI=2:
+
+name: AFRL:converter:umft600:0.0.0
+description: UMFT600 FIFO to Analog Devices FIFO conversion core.
+
+filesets:
+  src:
+    files:
+      - src/umft600_fifo_converter.v
+    file_type: verilogSource
+  
+  tb:
+    files:
+      - tb/tb_umft600.v
+    file_type: verilogSource
+    
+targets:
+  default:
+    filesets: [src]
+  
+  sim:
+    default_tool: icarus
+    filesets: [src, tb]
+    toplevel: tb_umft600
+    
