@@ -32,32 +32,32 @@
 
 `timescale 1ns/100ps
 
-//UART
+//umft600
 module umft600_fifo_converter #(
-    parameter data_bits   = 16,
-  ) 
+    parameter data_bits   = 16
+  )
   (
     //system
-    input                   rstn,
+    input                     rstn,
     // umft interface
-    input                   umft_dclk,
-    inout  [ 1:0]           umft_ben,
-    inout  [data_bits-1:0]  umft_data,
-    output                  umft_rdn,
-    output                  umft_wrn,
-    output                  umft_siwun,
-    input                   umft_txen,
-    input                   umft_rxfn,
-    output                  umft_oen,
-    output                  umft_rstn,
-    output                  umft_wakeupn,
+    input                     umft_dclk,
+    inout  [data_bits/8-1:0]  umft_ben,
+    inout  [data_bits-1:0]    umft_data,
+    output                    umft_rdn,
+    output                    umft_wrn,
+    output                    umft_siwun,
+    input                     umft_txen,
+    input                     umft_rxfn,
+    output                    umft_oen,
+    output                    umft_rstn,
+    output                    umft_wakeupn,
     // fifo interface
-    input  [data_bits-1:0]  fifo_datai,
-    output [data_bits-1:0]  fifo_datao,
-    input                   fifo_full,
-    input                   fifo_empty,
-    output                  fifo_wr,
-    output                  fifo_rd
+    input  [data_bits-1:0]    fifo_datai,
+    output [data_bits-1:0]    fifo_datao,
+    input                     fifo_full,
+    input                     fifo_empty,
+    output                    fifo_wr,
+    output                    fifo_rd
   );
   
   // wait for diff        
