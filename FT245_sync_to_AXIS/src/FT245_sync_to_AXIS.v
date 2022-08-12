@@ -1,11 +1,10 @@
 // ***************************************************************************
 // ***************************************************************************
-// @FILE    umft600_fifo_converter.v
+// @FILE    FT245_sync_to_AXIS.v
 // @AUTHOR  JAY CONVERTINO
 // @DATE    2022.08.09
-// @BRIEF   UMFT600 dev board fifo converter interface
-// @DETAILS Converter UMFT600 FIFO interface to analog devices FIFO interface
-//          for DMA interfacing.
+// @BRIEF   FT245 to AXIS
+// @DETAILS Converter FT245 sync FIFO interface to AXIS.
 //
 // @LICENSE MIT
 //  Copyright 2022 Jay Convertino
@@ -32,32 +31,32 @@
 
 `timescale 1ns/100ps
 
-//umft600
-module umft600_fifo_converter #(
-    parameter data_bits   = 16
-  )
+//UART
+module FT245_sync_to_AXIS #(
+    parameter data_bits   = 16,
+  ) 
   (
     //system
-    input                     rstn,
+    input                   rstn,
     // umft interface
-    input                     umft_dclk,
-    inout  [data_bits/8-1:0]  umft_ben,
-    inout  [data_bits-1:0]    umft_data,
-    output                    umft_rdn,
-    output                    umft_wrn,
-    output                    umft_siwun,
-    input                     umft_txen,
-    input                     umft_rxfn,
-    output                    umft_oen,
-    output                    umft_rstn,
-    output                    umft_wakeupn,
+    input                   umft_dclk,
+    inout  [ 1:0]           umft_ben,
+    inout  [data_bits-1:0]  umft_data,
+    output                  umft_rdn,
+    output                  umft_wrn,
+    output                  umft_siwun,
+    input                   umft_txen,
+    input                   umft_rxfn,
+    output                  umft_oen,
+    output                  umft_rstn,
+    output                  umft_wakeupn,
     // fifo interface
-    input  [data_bits-1:0]    fifo_datai,
-    output [data_bits-1:0]    fifo_datao,
-    input                     fifo_full,
-    input                     fifo_empty,
-    output                    fifo_wr,
-    output                    fifo_rd
+    input  [data_bits-1:0]  fifo_datai,
+    output [data_bits-1:0]  fifo_datao,
+    input                   fifo_full,
+    input                   fifo_empty,
+    output                  fifo_wr,
+    output                  fifo_rd
   );
   
   // wait for diff        
