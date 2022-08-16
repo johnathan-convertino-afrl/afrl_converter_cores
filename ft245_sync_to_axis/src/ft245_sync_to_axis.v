@@ -1,33 +1,32 @@
-// ***************************************************************************
-// ***************************************************************************
-// @FILE    ft245_sync_to_axis.v
-// @AUTHOR  JAY CONVERTINO
-// @DATE    2022.08.09
-// @BRIEF   FT245 to AXIS
-// @DETAILS Converter FT245 sync FIFO interface to AXIS.
-//
-// @LICENSE MIT
-//  Copyright 2022 Jay Convertino
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to 
-//  deal in the Software without restriction, including without limitation the
-//  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
-//  sell copies of the Software, and to permit persons to whom the Software is 
-//  furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in 
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-//  IN THE SOFTWARE.
-// ***************************************************************************
-// ***************************************************************************
+/*******************************************************************************
+ * @FILE    ft245_sync_to_axis.v
+ * @AUTHOR  JAY CONVERTINO
+ * @DATE    2022.08.09
+ * @BRIEF   FT245 to AXIS
+ * @DETAILS Converter FT245 sync FIFO interface to AXIS.
+ *
+ * @LICENSE MIT
+ *  Copyright 2022 Jay Convertino
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to 
+ *  deal in the Software without restriction, including without limitation the
+ *  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+ *  sell copies of the Software, and to permit persons to whom the Software is 
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in 
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ *  IN THE SOFTWARE.
+ * 
+ ******************************************************************************/
 
 `timescale 1ns/100ps
 
@@ -35,150 +34,68 @@
 
 //UART
 module ft245_sync_to_axis #(
-    parameter data_bits   = 16,
+    parameter BUS_WIDTH = 1,
   ) 
   (
-    //system
-    input                   rstn,
+    // system
+    input                       rstn,
     // umft interface
-    input                   umft_dclk,
-    inout  [ 1:0]           umft_ben,
-    inout  [data_bits-1:0]  umft_data,
-    output                  umft_rdn,
-    output                  umft_wrn,
-    output                  umft_siwun,
-    input                   umft_txen,
-    input                   umft_rxfn,
-    output                  umft_oen,
-    output                  umft_rstn,
-    output                  umft_wakeupn,
-    // fifo interface
-    input  [data_bits-1:0]  fifo_datai,
-    output [data_bits-1:0]  fifo_datao,
-    input                   fifo_full,
-    input                   fifo_empty,
-    output                  fifo_wr,
-    output                  fifo_rd
+    input                       ft245_dclk,
+    inout   [BUS_WIDTH-1:0]     ft245_ben,
+    inout   [(BUS_WIDTH*8)-1:0] ft245_data,
+    output                      ft245_rdn,
+    output                      ft245_wrn,
+    output                      ft245_siwun,
+    input                       ft245_txen,
+    input                       ft245_rxfn,
+    output                      ft245_oen,
+    output                      ft245_rstn,
+    output                      ft245_wakeupn,
+    // slave
+    input   [(BUS_WIDTH*8)-1:0] s_axis_tdata,
+    input   [BUS_WIDTH-1:0:0]   s_axis_tkeep,
+    input                       s_axis_tvalid,
+    output                      s_axis_tready,
+    // master
+    output  [(BUS_WIDTH*8)-1:0] m_axis_tdata,
+    output  [BUS_WIDTH-1:0]     m_axis_tkeep,
+    output                      m_axis_tvalid,
+    input                       m_axis_tready
   );
   
-  // wait for diff        
-  localparam read_state    = 1'b1;
-  // data capture
-  localparam write_state   = 1'b0;
+  reg r_oen;
+  reg r_rdn;
+  reg r_wrn;
   
-  //umft 600
-  reg           r_umft_oen;
-  reg [1:0]     r_umft_beno;
-  reg [1:0]     rr_umft_beno;
-  reg           r_umft_rdn;
-  reg           rr_umft_rdn;
-  reg           r_umft_wrn;
-  reg           rr_umft_wrn;
-  reg           r_umft_fifo_wr;
-  reg           rr_umft_fifo_wr;
-  reg           r_umft_fifo_rd;
+  assign ft245_data <= (r_oen ? b`z : s_axis_tdata);
+  assign ft245_ben  <= (r_oen ? b`z : s_axis_tkeep);
+  assign ft245_wrn  <= r_wrn;
+  assign ft245_oen  <= r_oen;
+  assign ft245_rdn  <= r_rdn;
   
-  reg           state;
+  assign s_axis_tready <= ~r_wrn;
   
-  //tristate driver
-  assign umft_data    = (r_umft_oen == 1'b1 ? fifo_datai : 16'bzzzzzzzzzzzzzzzz);
-  assign umft_ben     = (r_umft_oen == 1'b1 ? rr_umft_beno : 2'bzz);
-  assign fifo_datao   = umft_data;
-  //assign fifo_beni  = umft_ben;
+  assign m_axis_tdata <= (r_oen ? b`0 :ft245_data);
+  assign m_axis_tkeep <= (r_oen ? b`0 :ft245_ben);
   
-  //to usb
-  assign umft_rstn    = rstn;
-  assign umft_oen     = r_umft_oen  | fifo_full;
-  assign umft_rdn     = rr_umft_rdn | fifo_full;
-  assign umft_wrn     = rr_umft_wrn | r_umft_wrn;
-  assign umft_siwun   = 1'b1;
-  assign umft_wakeupn = 1'b0;
-  
-  //to fifo
-  assign fifo_wr = rr_umft_fifo_wr & ~umft_rxfn & ~fifo_full;
-  assign fifo_rd = r_umft_fifo_rd;
-  
-  // this is a mess, but it works. Need to cleanup and redo, hopefully its good enough to test with!
-  always @(posedge umft_dclk) begin
+  always @(posedge ft245_dclk) begin
     if(rstn == 1'b0) begin
-      r_umft_oen  <= 1'b1;
-      r_umft_rdn  <= 1;
-      rr_umft_rdn <= 1;
-      r_umft_wrn  <= 1;
-      rr_umft_wrn <= 1;
-      r_umft_fifo_wr  <= 0;
-      rr_umft_fifo_wr <= 0;
-      r_umft_fifo_rd  <= 0;
-      
-      r_umft_beno  <= 2'b00;
-      rr_umft_beno <= 2'b00;
-      
-      state <= read_state;
+      // m_axis
+      m_axis_tdata  <= 0;
+      m_axis_tkeep  <= 0;
+      m_axis_tvalid <= 0;
+      // s_axis
+      s_axis_tready <= 0;
+      // regs
+      r_oen <= 0;
+      r_rdn <= 0;
+      r_wrn <= 0;
     end else begin
-              
-      case (state)
-      //read from USB fifo to FPGA fifo
-      read_state: begin
-        state <= write_state;
-        
-        r_umft_oen <= 1'b1;
-        r_umft_rdn <= 1'b1;
-        r_umft_wrn <= 1'b1;
-        r_umft_beno  <= 2'b00;
-        r_umft_fifo_rd <= 1'b0;
-        r_umft_fifo_wr <= 1'b0;
-        
-        rr_umft_wrn <= 1'b1;
-        rr_umft_rdn <= 1'b1;
-        rr_umft_beno <= 2'b00;
-        rr_umft_fifo_wr <= 1'b0;
-        
-        if((umft_rxfn == 1'b0) && (fifo_full == 1'b0)) begin
-          state <= read_state;
-          
-          r_umft_oen <= 1'b0;
-          
-          r_umft_rdn <= 1'b0;
-          
-          r_umft_fifo_wr <= 1'b1;
-          
-          rr_umft_rdn <= r_umft_rdn;
-          
-          rr_umft_fifo_wr <= r_umft_fifo_wr;
-        end
-      end
-      //write data to USB fifo from FPGA fifo
-      write_state: begin
-        state <= read_state;
-        
-        r_umft_oen <= 1'b1;
-        r_umft_rdn <= 1'b1;
-        r_umft_wrn <= 1'b1;
-        r_umft_beno  <= 2'b00;
-        r_umft_fifo_rd <= 1'b0;
-        r_umft_fifo_wr <= 1'b0;
-        
-        //rr_umft_wrn <= 1'b1;
-        rr_umft_rdn <= 1'b1;
-        rr_umft_beno <= 2'b00;
-        rr_umft_fifo_wr <= 1'b0;
-        
-        if((umft_txen == 1'b0) && (fifo_empty == 1'b0)) begin
-          state <= write_state;
-          
-          r_umft_beno <= 2'b11;
-          
-          rr_umft_wrn <= r_umft_wrn;
-          
-          r_umft_wrn  <= 1'b0;
-          
-          rr_umft_beno <= r_umft_beno;
-  
-          r_umft_fifo_rd <= 1'b1;
-        end
-      end
-      endcase
+      r_oen <= ft245_rxfn;
+      r_rdn <= r_oen or ((~s_axis_tready xor r_rdn) and ~s_axis_tready);
+      r_wrn <= (~ft245_txen and ft245_rxfn) and s_axis_tvalid;
+      
+      m_axis_tvalid <= ~(r_oen and ft245_rxfn);
     end
   end
- 
 endmodule
