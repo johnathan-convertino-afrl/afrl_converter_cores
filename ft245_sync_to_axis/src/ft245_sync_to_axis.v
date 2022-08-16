@@ -1,6 +1,6 @@
 // ***************************************************************************
 // ***************************************************************************
-// @FILE    FT245_sync_to_AXIS.v
+// @FILE    ft245_sync_to_axis.v
 // @AUTHOR  JAY CONVERTINO
 // @DATE    2022.08.09
 // @BRIEF   FT245 to AXIS
@@ -34,7 +34,7 @@
 `include util_helper_math.vh
 
 //UART
-module FT245_sync_to_AXIS #(
+module ft245_sync_to_axis #(
     parameter data_bits   = 16,
   ) 
   (
