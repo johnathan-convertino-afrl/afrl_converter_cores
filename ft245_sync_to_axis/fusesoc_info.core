@@ -1,15 +1,13 @@
 CAPI=2:
 
-name: AFRL:converter:FT245_AXIS:0.0.0
+name: AFRL:converter:ft245_sync_to_axis:0.0.0
 description: FT245 FIFO to AXIS conversion core.
 
 filesets:
   src:
     files:
-      - src/FT245_sync_to_AXIS.v
+      - src/ft245_sync_to_axis.v
     file_type: verilogSource
-    depend:
-      - AFRL:utility:util_helper:1.0.0
   
   tb:
     files:

@@ -30,19 +30,17 @@
 
 `timescale 1ns/100ps
 
-`include util_helper_math.vh
-
-//UART
+// ft245 to axis
 module ft245_sync_to_axis #(
-    parameter BUS_WIDTH = 1,
+    parameter bus_width = 1
   ) 
   (
     // system
     input                       rstn,
     // umft interface
     input                       ft245_dclk,
-    inout   [BUS_WIDTH-1:0]     ft245_ben,
-    inout   [(BUS_WIDTH*8)-1:0] ft245_data,
+    inout   [bus_width-1:0]     ft245_ben,
+    inout   [(bus_width*8)-1:0] ft245_data,
     output                      ft245_rdn,
     output                      ft245_wrn,
     output                      ft245_siwun,
@@ -52,13 +50,13 @@ module ft245_sync_to_axis #(
     output                      ft245_rstn,
     output                      ft245_wakeupn,
     // slave
-    input   [(BUS_WIDTH*8)-1:0] s_axis_tdata,
-    input   [BUS_WIDTH-1:0:0]   s_axis_tkeep,
+    input   [(bus_width*8)-1:0] s_axis_tdata,
+    input   [bus_width-1:0]     s_axis_tkeep,
     input                       s_axis_tvalid,
     output                      s_axis_tready,
     // master
-    output  [(BUS_WIDTH*8)-1:0] m_axis_tdata,
-    output  [BUS_WIDTH-1:0]     m_axis_tkeep,
+    output  [(bus_width*8)-1:0] m_axis_tdata,
+    output  [bus_width-1:0]     m_axis_tkeep,
     output                      m_axis_tvalid,
     input                       m_axis_tready
   );
@@ -67,35 +65,35 @@ module ft245_sync_to_axis #(
   reg r_rdn;
   reg r_wrn;
   
-  assign ft245_data <= (r_oen ? b`z : s_axis_tdata);
-  assign ft245_ben  <= (r_oen ? b`z : s_axis_tkeep);
-  assign ft245_wrn  <= r_wrn;
-  assign ft245_oen  <= r_oen;
-  assign ft245_rdn  <= r_rdn;
+  reg r_m_axis_tvalid;
+  reg r_s_axis_tready;
   
-  assign s_axis_tready <= ~r_wrn;
+  assign ft245_data = (r_oen ? 'bz : s_axis_tdata);
+  assign ft245_ben  = (r_oen ? 'bz : s_axis_tkeep);
+  assign ft245_wrn  = r_wrn;
+  assign ft245_oen  = r_oen;
+  assign ft245_rdn  = r_rdn;
   
-  assign m_axis_tdata <= (r_oen ? b`0 : ft245_data);
-  assign m_axis_tkeep <= (r_oen ? b`0 : ft245_ben);
+  assign s_axis_tready = ~r_wrn;
+  
+  assign m_axis_tdata = (r_oen ? 'b0 : ft245_data);
+  assign m_axis_tkeep = (r_oen ? 'b0 : ft245_ben);
+  assign m_axis_tvalid = r_m_axis_tvalid;
   
   always @(posedge ft245_dclk) begin
     if(rstn == 1'b0) begin
       // m_axis
-      m_axis_tdata  <= 0;
-      m_axis_tkeep  <= 0;
-      m_axis_tvalid <= 0;
-      // s_axis
-      s_axis_tready <= 0;
+      r_m_axis_tvalid <= 0;
       // regs
       r_oen <= 0;
       r_rdn <= 0;
       r_wrn <= 0;
     end else begin
       r_oen <= ft245_rxfn;
-      r_rdn <= r_oen or ((~s_axis_tready xor r_rdn) and ~s_axis_tready);
-      r_wrn <= (~ft245_txen and ft245_rxfn) and s_axis_tvalid;
+      r_rdn <= r_oen | ((~m_axis_tready ^ r_rdn) & ~m_axis_tready);
+      r_wrn <= (~ft245_txen & ft245_rxfn) & s_axis_tvalid;
       
-      m_axis_tvalid <= ~(r_oen and ft245_rxfn);
+      r_m_axis_tvalid <= ~(r_oen & ft245_rxfn);
     end
   end
 endmodule

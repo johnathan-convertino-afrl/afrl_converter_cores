@@ -11,45 +11,25 @@ module tb_main;
   
   reg         tb_data_clk = 0;
   reg         tb_rst = 0;
-//   wire        tb_rx;
+  //   wire        tb_rx;
   wire [7:0]  tb_m_tdata;
   wire        tb_m_tvalid;
   wire        tb_m_tready;
-//   wire        tb_tx;
+  //   wire        tb_tx;
   reg  [7:0]  tb_s_tdata;
   reg         tb_s_tvalid;
   wire        tb_s_tready;
-  wire        tb_uart_loop;
+  
   //1ns
   localparam CLK_PERIOD = 20;
-//   localparam BAUD_PERIOD = 10000;
   localparam RST_PERIOD = 500;
-  localparam CLK_SPEED_HZ = 1000000000/CLK_PERIOD;
-  //serial data, one parity, one stop, one start, eight data bits, one for holding at one.
-//   localparam SERIAL_BITS = 1 + 1 + 1 + 8 + 1;
-  
-  //reg
-  //serial data, one parity, one stop, one start, eight data bits, one for holding at one.
-//   reg [SERIAL_BITS-1:0] serial_data = 12'b101101010101;
-  
-//   integer data_counter;
   
   //device under test
-  util_axis_uart #(
-    .baud_clock_speed(CLK_SPEED_HZ),
-    .baud_rate(4000000),
-    .parity_ena(0),
-    .parity_type(0),
-    .stop_bits(1),
-    .data_bits(8),
-    .rx_delay(6),
-    .rx_uart_delay(2),
-    .tx_delay(2),
-    .tx_uart_delay(0)
+  ft245_sync_to_axis #(
+    .bus_width(1)
   ) dut (
-    //clock and reset
-    .aclk(tb_data_clk),
-    .arstn(~tb_rst),
+    //reset
+    .rstn(~tb_rst),
     //master output
     .m_axis_tdata(tb_m_tdata),
     .m_axis_tvalid(tb_m_tvalid),
@@ -57,12 +37,7 @@ module tb_main;
     //slave input
     .s_axis_tdata(tb_s_tdata),
     .s_axis_tvalid(tb_s_tvalid),
-    .s_axis_tready(tb_s_tready),
-    //uart input
-    .uart_clk(tb_data_clk),
-    .uart_rstn(~tb_rst),
-    .tx(tb_uart_loop),
-    .rx(tb_uart_loop)
+    .s_axis_tready(tb_s_tready)
   );
     
   //assign
@@ -82,8 +57,8 @@ module tb_main;
   //copy pasta, vcd generation
   initial
   begin
-    $dumpfile("sim/icarus/tb_uart.vcd");
-    $dumpvars(0,tb_uart);
+    $dumpfile("tb_sim.vcd");
+    $dumpvars(0,tb_main);
   end
   
   //axis clock
@@ -93,24 +68,6 @@ module tb_main;
     
     #(CLK_PERIOD/2);
   end
-  
-/*  
-  //produce rx serial data
-  always @(posedge tb_baud_clk)
-  begin
-    if (tb_rst == 1'b1) begin
-      data_counter  <= SERIAL_BITS-1;
-      serial_data   <= 12'b101101010101;
-    end else begin
-      data_counter <= data_counter - 1;
-      
-      if(data_counter == 0) begin
-        data_counter <= SERIAL_BITS - 1;
-        serial_data[9:2] <= {serial_data[8:2], serial_data[9]};
-      end
-      
-    end
-  end*/
   
   //produce axis slave data for tx
   always @(posedge tb_data_clk)
