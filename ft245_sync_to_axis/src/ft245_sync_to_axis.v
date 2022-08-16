@@ -75,8 +75,8 @@ module ft245_sync_to_axis #(
   
   assign s_axis_tready <= ~r_wrn;
   
-  assign m_axis_tdata <= (r_oen ? b`0 :ft245_data);
-  assign m_axis_tkeep <= (r_oen ? b`0 :ft245_ben);
+  assign m_axis_tdata <= (r_oen ? b`0 : ft245_data);
+  assign m_axis_tkeep <= (r_oen ? b`0 : ft245_ben);
   
   always @(posedge ft245_dclk) begin
     if(rstn == 1'b0) begin
