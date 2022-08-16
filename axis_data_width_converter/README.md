@@ -1,4 +1,4 @@
-# UTIL AXIS DATA WIDTH CONVERTER
+# AXIS DATA WIDTH CONVERTER
 ## Simple data width converted for ratios that divide into one another.
 ---
 
@@ -30,7 +30,7 @@ round number. 5/2 is a fractional number that will not work with this core.
 ### COMPONENTS
 #### SRC
 
-* util_axis_data_width_converter.v
+* axis_data_width_converter.v
   
 #### TB
 

@@ -8,6 +8,8 @@ filesets:
     files:
       - src/FT245_sync_to_AXIS.v
     file_type: verilogSource
+    depend:
+      - AFRL:utility:util_helper:1.0.0
   
   tb:
     files:

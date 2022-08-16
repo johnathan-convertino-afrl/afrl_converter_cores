@@ -1,6 +1,6 @@
 // ***************************************************************************
 // ***************************************************************************
-// @FILE    util_axis_data_width_converter.v
+// @FILE    axis_data_width_converter.v
 // @AUTHOR  JAY CONVERTINO
 // @DATE    2021.06.21
 // @BRIEF   AXIS DATA WIDTH CONVERTER
@@ -32,8 +32,10 @@
 
 `timescale 1ns/100ps
 
+`util_helper_math.vh
+
 //data width converter
-module util_axis_data_width_converter #(
+module axis_data_width_converter #(
     parameter slave_width = 1,
     parameter master_width = 1
   )

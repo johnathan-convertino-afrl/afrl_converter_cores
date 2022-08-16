@@ -31,6 +31,8 @@
 
 `timescale 1ns/100ps
 
+`include util_helper_math.vh
+
 //UART
 module FT245_sync_to_AXIS #(
     parameter data_bits   = 16,
