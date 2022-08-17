@@ -66,13 +66,15 @@ module ft245_sync_to_axis #(
   reg r_wrn;
   
   reg r_m_axis_tvalid;
-  reg r_s_axis_tready;
   
-  assign ft245_data = (r_oen ? 'bz : s_axis_tdata);
-  assign ft245_ben  = (r_oen ? 'bz : s_axis_tkeep);
+  assign ft245_data = (r_oen ? s_axis_tdata : 'bz);
+  assign ft245_ben  = (r_oen ? s_axis_tkeep : 'bz);
   assign ft245_wrn  = r_wrn;
   assign ft245_oen  = r_oen;
   assign ft245_rdn  = r_rdn;
+  assign ft245_wakeupn = 1'b0;
+  assign ft245_siwun   = 1'b0;
+  assign ft245_rstn = rstn;
   
   assign s_axis_tready = ~r_wrn;
   
@@ -85,13 +87,13 @@ module ft245_sync_to_axis #(
       // m_axis
       r_m_axis_tvalid <= 0;
       // regs
-      r_oen <= 0;
-      r_rdn <= 0;
-      r_wrn <= 0;
+      r_oen <= 1;
+      r_rdn <= 1;
+      r_wrn <= 1;
     end else begin
       r_oen <= ft245_rxfn;
       r_rdn <= r_oen | ((~m_axis_tready ^ r_rdn) & ~m_axis_tready);
-      r_wrn <= (~ft245_txen & ft245_rxfn) & s_axis_tvalid;
+      r_wrn <= (~ft245_txen & ft245_rxfn) & ~s_axis_tvalid;
       
       r_m_axis_tvalid <= ~(r_oen & ft245_rxfn);
     end
