@@ -37,7 +37,7 @@ module ft245_sync_to_axis #(
   (
     // system
     input                       rstn,
-    // umft interface
+    // ft245 interface
     input                       ft245_dclk,
     inout   [bus_width-1:0]     ft245_ben,
     inout   [(bus_width*8)-1:0] ft245_data,
@@ -64,11 +64,19 @@ module ft245_sync_to_axis #(
   reg r_oen;
   reg r_rdn;
   reg r_wrn;
+  reg r_rxfn;
   
+  reg [(bus_width*8)-1:0] r_s_axis_tdata;
+  reg [bus_width-1:0]     r_s_axis_tkeep;
+  reg                     r_s_axis_tready;
+  
+  reg [(bus_width*8)-1:0] r_m_axis_tdata;
+  reg [bus_width-1:0]     r_m_axis_tkeep;
   reg r_m_axis_tvalid;
+  reg rr_m_axis_tvalid;
   
-  assign ft245_data = (r_oen ? s_axis_tdata : 'bz);
-  assign ft245_ben  = (r_oen ? s_axis_tkeep : 'bz);
+  assign ft245_data = (r_oen ? r_s_axis_tdata : 'bz);
+  assign ft245_ben  = (r_oen ? r_s_axis_tkeep : 'bz);
   assign ft245_wrn  = r_wrn;
   assign ft245_oen  = r_oen;
   assign ft245_rdn  = r_rdn;
@@ -76,26 +84,46 @@ module ft245_sync_to_axis #(
   assign ft245_siwun   = 1'b0;
   assign ft245_rstn = rstn;
   
-  assign s_axis_tready = ~r_wrn;
+  assign s_axis_tready = r_s_axis_tready;
   
-  assign m_axis_tdata = (r_oen ? 'b0 : ft245_data);
-  assign m_axis_tkeep = (r_oen ? 'b0 : ft245_ben);
-  assign m_axis_tvalid = r_m_axis_tvalid;
+  assign m_axis_tdata  = r_m_axis_tdata;
+  assign m_axis_tkeep  = r_m_axis_tkeep;
+  assign m_axis_tvalid = rr_m_axis_tvalid;
   
   always @(posedge ft245_dclk) begin
     if(rstn == 1'b0) begin
       // m_axis
-      r_m_axis_tvalid <= 0;
+      r_m_axis_tdata    <= 0;
+      r_m_axis_tkeep    <= 0;
+      r_m_axis_tvalid   <= 0;
+      rr_m_axis_tvalid  <= 0;
+      // s_axis
+      r_s_axis_tdata  <= 0;
+      r_s_axis_tkeep  <= 0;
+      r_s_axis_tready <= 0;
       // regs
-      r_oen <= 1;
-      r_rdn <= 1;
-      r_wrn <= 1;
+      r_oen   <= 1;
+      r_rdn   <= 1;
+      r_wrn   <= 1;
+      r_rxfn  <= 1;
     end else begin
-      r_oen <= ft245_rxfn;
-      r_rdn <= r_oen | ((~m_axis_tready ^ r_rdn) & ~m_axis_tready);
-      r_wrn <= (~ft245_txen & ft245_rxfn) & ~s_axis_tvalid;
+      // insert a delay so write can finish
+      r_rxfn <= ft245_rxfn;
+      r_oen <= r_rxfn;
+      r_rdn <= ft245_rxfn | r_oen | ((~m_axis_tready ^ r_rdn) & ~m_axis_tready);
+      // only write when txen is 0, there is valid data, or rxfn is not available for a read (read has priority).
+      r_wrn <= ~r_s_axis_tready | ~s_axis_tvalid;
       
-      r_m_axis_tvalid <= ~(r_oen & ft245_rxfn);
+      // register output data to align valid
+      r_m_axis_tdata    <= (r_oen ? 'b0 : ft245_data);
+      r_m_axis_tkeep    <= (r_oen ? 'b0 : ft245_ben);
+      r_m_axis_tvalid   <= ~(r_oen & ft245_rxfn);
+      rr_m_axis_tvalid  <= r_m_axis_tvalid;
+      
+      // register input data to align wrn
+      r_s_axis_tdata  <= s_axis_tdata;
+      r_s_axis_tkeep  <= s_axis_tkeep;
+      r_s_axis_tready <= ~ft245_txen & ft245_rxfn;
     end
   end
 endmodule

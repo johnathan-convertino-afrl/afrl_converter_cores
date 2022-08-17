@@ -21,6 +21,8 @@ module tb_main;
   reg         tb_s_tvalid;
   wire        tb_s_tready;
   
+  reg tb_txen = 0;
+  
   wire [0:0] tb_ben;
   wire [7:0] tb_data;
   wire tb_rdn;
@@ -46,7 +48,7 @@ module tb_main;
     .ft245_rdn(tb_rdn),
     .ft245_wrn(tb_wrn),
     .ft245_siwun(tb_siwun),
-    .ft245_txen(1'b0),
+    .ft245_txen(tb_txen),
     .ft245_rxfn(1'b1),
     .ft245_oen(tb_oen),
     .ft245_rstn(tb_rstn),
@@ -77,6 +79,20 @@ module tb_main;
     tb_rst <= 1'b0;
   end
   
+  //transmit data
+  initial
+  begin
+    tb_txen <= 1'b1;
+    
+    #RST_PERIOD
+    
+    tb_txen <= 1'b0;
+    
+    #5000
+  
+    tb_txen <= 1'b1;
+  end
+  
   //copy pasta, vcd generation
   initial
   begin
@@ -99,7 +115,7 @@ module tb_main;
       tb_s_tvalid     <= 1'b0;
       tb_s_tdata      <= 8'd65;
     end else begin
-      tb_s_tvalid <= 1'b1;
+      tb_s_tvalid <= $random % 2;
       
       tb_s_tdata <= tb_s_tdata;
       
