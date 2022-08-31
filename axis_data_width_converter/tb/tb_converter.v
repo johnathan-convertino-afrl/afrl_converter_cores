@@ -27,7 +27,7 @@ module tb_converter;
   localparam CLK_PERIOD = 500;
   localparam RST_PERIOD = 1000;
   
-  util_axis_data_width_converter #(
+  axis_data_width_converter #(
     .master_width(2),
     .slave_width(16)
   ) dut (

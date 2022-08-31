@@ -1,25 +1,29 @@
 CAPI=2:
 
-name: AFRL:converter:util_axis_data_width_converter:1.0.0
+name: AFRL:converter:axis_data_width_converter:1.0.0
 description: Convert axis data width for even divides (2/4 4/2 2/2).
 
 filesets:
   src:
     files:
-      - src/util_axis_data_width_converter.v
+      - src/axis_data_width_converter.v
     file_type: verilogSource
   
   tb:
     files:
       - tb/tb_converter.v
     file_type: verilogSource
+    
+  dep:
+    depend:
+      - AFRL:utility:helper:1.0.0
   
 targets:
   default:
-    filesets: [src]
+    filesets: [src, dep]
   
   sim:
     default_tool: icarus
-    filesets: [src, tb]
+    filesets: [src, tb, dep]
     toplevel: tb_converter
     

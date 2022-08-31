@@ -32,7 +32,7 @@
 
 `timescale 1ns/100ps
 
-`util_helper_math.vh
+`include "util_helper_math.vh"
 
 //data width converter
 module axis_data_width_converter #(
